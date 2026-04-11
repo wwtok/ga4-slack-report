@@ -16,15 +16,18 @@ _TEMPLATES_DIR = Path(__file__).parent / "templates"
 def _trend(diff: float, unit: str) -> str:
     if abs(diff) < 0.05:
         return "→ 0"
+    icon = "📈" if diff > 0 else "📉"
     arrow = "▲" if diff > 0 else "▼"
-    return f"({arrow} {diff:+.1f}{unit})"
+    return f"{icon} ({arrow} {diff:+.1f}{unit})"
 
 
-def _trend_pos(diff: float) -> str:
+def _trend_pos(diff: float, unit: str = "") -> str:
+    """Inverse trend: decrease is positive (e.g. bounce rate)."""
     if abs(diff) < 0.1:
         return "→ 0"
-    arrow = "▲" if diff < 0 else "▼"
-    return f"({arrow} {abs(diff):.1f})"
+    icon = "📈" if diff < 0 else "📉"
+    arrow = "▲" if diff > 0 else "▼"
+    return f"{icon} ({arrow} {abs(diff):.1f}{unit})"
 
 
 def _extract_path(url: str) -> str:

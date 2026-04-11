@@ -21,11 +21,8 @@ schedule:
 
 # GA4 properties to monitor (multiple properties supported)
 properties:
-  - name: "My Website"
-    property_id: "123456789"
-
-  # - name: "Blog"
-  #   property_id: "987654321"
+  - name: "noo9"
+    property_id: "409446397"
 
 # Google Cloud service account settings
 google:
@@ -63,4 +60,4 @@ report:
 
   # Custom Jinja2 template path (null = default template)
   # For Korean reports, use: ga4_report/templates/default_ko.json.j2
-  # custom_template: templates/my-custom.json.j2
+  custom_template: ga4_report/templates/default_ko.json.j2
