@@ -1,0 +1,66 @@
+# ─────────────────────────────────────────────────────────
+# GA4 Slack Report — Configuration
+# Copy this file to config.yaml and edit to your needs.
+# ─────────────────────────────────────────────────────────
+
+# Report schedule settings
+schedule:
+  # Report period: daily | weekly | biweekly | monthly | custom
+  period: weekly
+
+  # Comparison baseline: previous_period | same_period_last_week | custom
+  compare: previous_period
+
+  # GA4 data is typically delayed by 1 day
+  data_delay_days: 1
+
+  # Only used when period or compare is "custom"
+  # custom:
+  #   current_days: 7
+  #   previous_days: 7
+
+# GA4 properties to monitor (multiple properties supported)
+properties:
+  - name: "My Website"
+    property_id: "123456789"
+
+  # - name: "Blog"
+  #   property_id: "987654321"
+
+# Google Cloud service account settings
+google:
+  # Env var name containing the service account JSON key
+  credentials_env: GOOGLE_SERVICE_ACCOUNT_JSON
+
+# Slack delivery settings
+slack:
+  # Delivery method: webhook | oauth
+  method: webhook
+
+  # For webhook: env var name containing the Incoming Webhook URL
+  webhook_url_env: SLACK_WEBHOOK_URL
+
+  # For oauth: env var name containing the Bot User OAuth Token
+  # token_env: SLACK_USER_OAUTH_TOKEN
+
+  # For oauth (required): target channel ID
+  # channel_id: "C073VSQQNF8"
+
+# Report content customization
+report:
+  # Toggle sections on/off
+  sections:
+    summary: true            # Overall summary (users, sessions, pageviews, duration, bounce rate)
+    traffic_sources: true    # Top traffic sources (source / medium)
+    top_pages: true          # Top pages by pageviews
+    top_devices: false       # Device category breakdown
+
+  # Number of top items to show
+  top_n: 10
+
+  # Multi-site mode: separate (one message per property) | combined (single message)
+  multi_site_mode: separate
+
+  # Custom Jinja2 template path (null = default template)
+  # For Korean reports, use: ga4_report/templates/default_ko.json.j2
+  # custom_template: templates/my-custom.json.j2
