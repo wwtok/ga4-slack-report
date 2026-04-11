@@ -1,0 +1,59 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "📊 {{ property_name }} GA4 Traffic Report ({{ current_range[0] }} ~ {{ current_range[1] }})"
+    }
+  },
+  {"type": "divider"}
+{% if sections.summary %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*Overall Summary*\n\n*Active Users:* {{ "{:,}".format(current.active_users) }}  {{ trend(diffs.active_users_pct, "%") }}\n*Sessions:* {{ "{:,}".format(current.sessions) }}  {{ trend(diffs.sessions_pct, "%") }}\n*Pageviews:* {{ "{:,}".format(current.pageviews) }}  {{ trend(diffs.pageviews_pct, "%") }}\n*Avg Session Duration:* {{ format_duration(current.avg_session_duration) }}  {{ trend(diffs.avg_session_duration_pct, "%") }}\n*Bounce Rate:* {{ format_bounce_rate(current.bounce_rate) }}  {{ trend(diffs.bounce_rate_diff, "%p") }}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+{% if sections.traffic_sources %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*🔗 Traffic Sources*\n\n{% if traffic_sources %}{% for ts in traffic_sources %}{{ loop.index }}. *{{ ts.source }} / {{ ts.medium }}* — {{ "{:,}".format(ts.sessions) }} sessions\n{% endfor %}{% else %}_No data_{% endif %}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+{% if sections.top_pages %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*📄 Top Pages*\n\n{% if pages %}{% for p in pages %}{{ loop.index }}. *{{ p.path }}* — {{ "{:,}".format(p.pageviews) }} views, {{ "{:,}".format(p.active_users) }} users\n{% endfor %}{% else %}_No data_{% endif %}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+{% if sections.top_devices %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*📱 Devices*\n\n{% if devices %}{% for d in devices %}{{ loop.index }}. *{{ d.category }}* — {{ "{:,}".format(d.sessions) }} sessions\n{% endfor %}{% else %}_No data_{% endif %}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+  ,{
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Compared to {{ previous_range[0] }} ~ {{ previous_range[1] }}"
+      }
+    ]
+  }
+]

@@ -1,0 +1,59 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "📊 {{ property_name }} GA4 트래픽 리포트 ({{ current_range[0] }} ~ {{ current_range[1] }})"
+    }
+  },
+  {"type": "divider"}
+{% if sections.summary %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*전체 요약*\n\n*활성 사용자:* {{ "{:,}".format(current.active_users) }}  {{ trend(diffs.active_users_pct, "%") }}\n*세션:* {{ "{:,}".format(current.sessions) }}  {{ trend(diffs.sessions_pct, "%") }}\n*페이지뷰:* {{ "{:,}".format(current.pageviews) }}  {{ trend(diffs.pageviews_pct, "%") }}\n*평균 세션 시간:* {{ format_duration(current.avg_session_duration) }}  {{ trend(diffs.avg_session_duration_pct, "%") }}\n*이탈률:* {{ format_bounce_rate(current.bounce_rate) }}  {{ trend(diffs.bounce_rate_diff, "%p") }}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+{% if sections.traffic_sources %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*🔗 유입 경로*\n\n{% if traffic_sources %}{% for ts in traffic_sources %}{{ loop.index }}. *{{ ts.source }} / {{ ts.medium }}* — 세션 {{ "{:,}".format(ts.sessions) }}\n{% endfor %}{% else %}_데이터 없음_{% endif %}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+{% if sections.top_pages %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*📄 TOP 페이지*\n\n{% if pages %}{% for p in pages %}{{ loop.index }}. *{{ p.path }}* — 조회 {{ "{:,}".format(p.pageviews) }}, 사용자 {{ "{:,}".format(p.active_users) }}\n{% endfor %}{% else %}_데이터 없음_{% endif %}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+{% if sections.top_devices %}
+  ,{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*📱 디바이스*\n\n{% if devices %}{% for d in devices %}{{ loop.index }}. *{{ d.category }}* — 세션 {{ "{:,}".format(d.sessions) }}\n{% endfor %}{% else %}_데이터 없음_{% endif %}"
+    }
+  }
+  ,{"type": "divider"}
+{% endif %}
+  ,{
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "{{ previous_range[0] }} ~ {{ previous_range[1] }} 대비"
+      }
+    ]
+  }
+]
