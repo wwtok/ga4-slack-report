@@ -1,0 +1,9 @@
+[tools]
+python = "3.12"
+
+[env]
+_.file = ".env"
+
+[tasks.report]
+description = "Run GA4 Slack report"
+run = "pip install -q -r requirements.txt && python main.py config.yaml"
