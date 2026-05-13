@@ -11,7 +11,9 @@ schedule:
   # Comparison baseline: previous_period | same_period_last_week | custom
   compare: previous_period
 
-  # GA4 data is typically delayed by 1 day
+  # Runner is UTC; cron fires Saturday 00:00 UTC (= Saturday 09:00 KST).
+  # date.today() = Saturday(UTC), end = Saturday - 1 = Friday, start = Friday - 6 = Saturday(prev).
+  # Result: previous Saturday ~ Friday (7 days).
   data_delay_days: 1
 
   # Only used when period or compare is "custom"
