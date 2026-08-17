@@ -81,12 +81,14 @@ def collect_property_data(
     property_config: PropertyConfig,
     schedule_config: ScheduleConfig,
     report_config: ReportConfig,
+    ref_date: date | None = None,
 ) -> PropertyReport:
     current_range, previous_range = compute_date_ranges(
         schedule_config.period,
         schedule_config.compare,
         schedule_config.data_delay_days,
         schedule_config.custom,
+        ref_date=ref_date,
     )
     c_start, c_end = current_range
     p_start, p_end = previous_range

@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import sys
 from dataclasses import asdict
+from datetime import date
 
 from ga4_report.config import load_config, load_config_from_env
 from ga4_report.ga4_client import build_client
@@ -23,12 +24,15 @@ def run(config_path: str | None = None) -> None:
         sys.exit(1)
     client = build_client(creds_json)
     sections_dict = asdict(cfg.report.sections)
+    ref_env = os.environ.get("REPORT_REF_DATE")
+    ref_date = date.fromisoformat(ref_env) if ref_env else None
     for prop in cfg.properties:
         report = collect_property_data(
             client=client,
             property_config=prop,
             schedule_config=cfg.schedule,
             report_config=cfg.report,
+            ref_date=ref_date,
         )
         blocks = render_report(
             report,
