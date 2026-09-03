@@ -1,6 +1,8 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+!.env.example
 *-service-account*.json
 *-credentials*.json
 gen-lang-client-*.json
