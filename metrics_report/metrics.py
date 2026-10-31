@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from typing import Literal, NamedTuple
 from urllib.parse import unquote, urlsplit
 
@@ -85,3 +85,7 @@ class Report:
     insights: list[str] = field(default_factory=list)
     unsupported: list[str] = field(default_factory=list)
     daily_dau: list[tuple[date, int]] = field(default_factory=list)
+    generated_at: datetime | None = None
+    project_id: str = ""
+    site: str = ""
+    amp_links: dict[str, str] = field(default_factory=dict)

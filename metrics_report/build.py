@@ -4,9 +4,9 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from metrics_report.amplitude import AmplitudeClient
 from metrics_report.config import Settings
@@ -21,6 +21,7 @@ from metrics_report.periods import (
 )
 from metrics_report.render import render_confluence, render_slack
 from metrics_report.store import Store
+from metrics_report.tick import KST
 
 WEEK_DAYS = 7
 MONTH_DAYS = 30
@@ -172,6 +173,7 @@ def build_report(
     amp: AmplitudeClient,
     naver_fetch=fetch_ranks,
     naver_totals_fetch=fetch_daily_totals,
+    now: Callable[[], datetime] = lambda: datetime.now(KST),
 ) -> Report:
     amp = _Memo(amp)  # shared with _amplitude so daily uniques are fetched once
     monthly = kind == "monthly"
@@ -183,6 +185,10 @@ def build_report(
         amplitude=_amplitude(kind, p, amp),
         naver=None,
         unsupported=[NO_SIGNUPS],
+        generated_at=now(),
+        project_id=settings.amplitude_project_id,
+        site=settings.naver_site,
+        amp_links=settings.amplitude_links,
     )
     days = (p.start + timedelta(days=i) for i in range((p.end - p.start).days + 1))
     report.daily_dau = list(zip(days, amp.active_users(p)[1]))

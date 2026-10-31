@@ -50,3 +50,8 @@ def test_missing_secret_raises(tmp_path):
     env = {k: v for k, v in ENV.items() if k != "AMPLITUDE_SECRET_KEY"}
     with pytest.raises(ValueError, match="AMPLITUDE_SECRET_KEY"):
         load_settings(_yaml(tmp_path), env)
+
+
+def test_amplitude_links_default():
+    from metrics_report.config import DEFAULT_AMPLITUDE_LINKS, Settings
+    assert "Amplitude 홈" in DEFAULT_AMPLITUDE_LINKS

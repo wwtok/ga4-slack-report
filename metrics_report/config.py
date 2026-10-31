@@ -17,6 +17,11 @@ ENV_SLACK_WEBHOOK_URL = "SLACK_WEBHOOK_URL"
 ENV_SLACK_TEST_WEBHOOK_URL = "SLACK_TEST_WEBHOOK_URL"
 
 
+DEFAULT_AMPLITUDE_LINKS = {
+    "Amplitude 홈": "https://app.amplitude.com/analytics/delicate-lab-505752/home"
+}
+
+
 class SlackTarget(Enum):
     PROD = ENV_SLACK_WEBHOOK_URL
     TEST = ENV_SLACK_TEST_WEBHOOK_URL
@@ -45,6 +50,7 @@ class Settings:
     out_dir: Path
     secrets: Secrets
     okr_links: Dict[str, str] = field(default_factory=dict)
+    amplitude_links: Dict[str, str] = field(default_factory=lambda: dict(DEFAULT_AMPLITUDE_LINKS))
 
 
 def _require(env: Mapping[str, str], name: str) -> str:
@@ -81,6 +87,7 @@ def load_settings(path: str = "metrics.yaml", env: Mapping[str, str] = os.enviro
         data_dir=Path(raw["data_dir"]),
         out_dir=Path(raw["out_dir"]),
         okr_links=dict(raw.get("okr_links") or {}),
+        amplitude_links=dict(raw.get("amplitude_links") or DEFAULT_AMPLITUDE_LINKS),
         secrets=_secrets(env),
     )
 

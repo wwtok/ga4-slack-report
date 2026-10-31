@@ -137,3 +137,27 @@ def test_confluence_url_top_is_link():
     html = render_confluence(report(naver()), None)
     assert '<a href="https://x.com/a%20b/?q=1">' in html
     assert ">/a b" in html
+
+
+def test_confluence_sources_section():
+    from datetime import datetime
+    from metrics_report.build import KST
+    r = report(naver())
+    r.project_id, r.site = "854978", "https://www.noo9.kr"
+    r.amp_links = {"Amplitude 홈": "https://app.amplitude.com/analytics/delicate-lab-505752/home", "리텐션": "https://amp/r"}
+    r.generated_at = datetime(2026, 11, 1, 9, 5, tzinfo=KST)
+    html = render_confluence(r, None)
+    assert "데이터 출처" in html and "2026-11-01 09:05 KST" in html
+    assert "누구뽑지 프로젝트(854978)" in html
+    assert "2026-10-24 ~ 2026-10-30 (비교 2026-10-17 ~ 2026-10-23)" in html
+    assert 'href="https://app.amplitude.com/analytics/delicate-lab-505752/home"' in html
+    assert 'href="https://amp/r">리텐션' in html
+    assert "console/site/report/expose?site=https%3A%2F%2Fwww.noo9.kr" in html
+    assert "키워드·URL 목록 기간 10-02 ~ 10-31" in html
+    assert "bracket retention" in html
+
+
+def test_confluence_sources_naver_failed():
+    html = render_confluence(report(None), None)
+    src = html.split("데이터 출처")[1]
+    assert "웹 검색 노출/클릭 · 수집 실패" in src.replace("\n", " ").replace("  ", " ")

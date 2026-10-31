@@ -158,3 +158,10 @@ def test_daily_dau_zips_series_with_period_dates(settings, store):
     assert r.daily_dau[0] == (date(2026, 10, 24), 10)
     assert r.daily_dau[-1] == (date(2026, 10, 30), 16)
     assert len(r.daily_dau) == 7
+
+
+def test_generated_at_uses_injected_clock(settings, store):
+    from datetime import datetime
+    t = datetime(2026, 11, 1, 9, 5)
+    r = build_report("weekly", RUN, settings, store, FakeAmp(), fake_ranks, fake_totals, now=lambda: t)
+    assert r.generated_at == t and r.project_id == settings.amplitude_project_id

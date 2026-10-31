@@ -76,3 +76,21 @@
 {% endfor %}
 </ul>
 {% endif %}
+<h2>데이터 출처</h2>
+<ul>
+<li>Amplitude: 누구뽑지 프로젝트({{ src.amp_project }}) · Dashboard REST API · 조회 기간 {{ src.p }} (비교 {{ src.pp }}){% for name, url in src.amp_links.items() %}
+ · <a href="{{ url }}">{{ name }}</a>
+{% endfor %}
+</li>
+<li>네이버 서치어드바이저: 사이트 {{ src.site }} · 웹 검색 노출/클릭 ·
+{% if naver %}
+키워드·URL 목록 기간 {{ naver.window }} · 노출/클릭 총계 {{ src.p }} (일별 합산)
+{% else %}
+수집 실패
+{% endif %}
+ · <a href="{{ src.naver_url }}">노출/클릭 리포트</a></li>
+{% if src.generated_at %}
+<li>생성 시각: {{ src.generated_at }}</li>
+{% endif %}
+<li>재방문율·랜딩 재방문율은 Amplitude bracket retention(7일/30일), 네이버 수치는 비공식 내부 API 기준</li>
+</ul>

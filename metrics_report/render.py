@@ -5,11 +5,13 @@ All display formats live here (see the fmt_* helpers) so they are easy to change
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import quote
 
 from jinja2 import Environment, FileSystemLoader
 
 from metrics_report.insights import build_insights
 from metrics_report.metrics import Delta, Report, normalize_path
+from metrics_report.periods import previous_period
 
 PCT = 100
 MAN = 10_000
@@ -19,6 +21,8 @@ UP, DOWN, FLAT = "▲", "▼", "–"
 RATE_KEYS = {"revisit_rate", "revisit_naver", "revisit_other", "d1", "d7", "naver_share", "stickiness"}
 WEEKDAYS = "월화수목금토일"
 NAVER_FAILED = "네이버 데이터 수집 실패"
+SEARCHADVISOR_URL = "https://searchadvisor.naver.com/console/site/report/expose?site={site}"
+GENERATED_FMT = "%Y-%m-%d %H:%M KST"
 
 _env = Environment(
     loader=FileSystemLoader(Path(__file__).parent / "templates"),
@@ -171,6 +175,19 @@ def _naver_ctx(r: Report) -> dict | None:
     }
 
 
+def _sources(r: Report) -> dict:
+    p, pp = r.period, previous_period(r.period)
+    return {
+        "amp_project": r.project_id,
+        "amp_links": r.amp_links,
+        "p": f"{p.start} ~ {p.end}",
+        "pp": f"{pp.start} ~ {pp.end}",
+        "site": r.site,
+        "naver_url": SEARCHADVISOR_URL.format(site=quote(r.site, safe="")),
+        "generated_at": r.generated_at.strftime(GENERATED_FMT) if r.generated_at else None,
+    }
+
+
 def render_confluence(report: Report, glossary_url: str | None) -> str:
     return _env.get_template("confluence.html.j2").render(
         label=report.label,
@@ -180,6 +197,7 @@ def render_confluence(report: Report, glossary_url: str | None) -> str:
         daily_dau=[(f"{d:%m-%d} ({WEEKDAYS[d.weekday()]})", n) for d, n in report.daily_dau],
         naver=_naver_ctx(report),
         unsupported=report.unsupported,
+        src=_sources(report),
     )
 
 
