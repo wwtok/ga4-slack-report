@@ -1,0 +1,65 @@
+<h1>{{ label }}</h1>
+{% if glossary_url %}
+<p>용어가 낯설면 <a href="{{ glossary_url }}">용어 풀이</a>를 확인하세요.</p>
+{% endif %}
+<h2>인사이트</h2>
+<ul>
+{% for line in insights %}
+<li>{{ line }}</li>
+{% endfor %}
+</ul>
+{% for s in sections if s.rows %}
+<h2>{{ s.title }}</h2>
+<table><tbody>
+<tr><th>지표</th><th>값</th><th>전기 대비</th></tr>
+{% for label, value, change in s.rows %}
+<tr><td>{{ label }}</td><td>{{ value }}</td><td>{{ change }}</td></tr>
+{% endfor %}
+</tbody></table>
+{% endfor %}
+<h2>네이버 검색</h2>
+{% if naver %}
+<table><tbody>
+<tr><th>지표</th><th>값</th><th>전기 대비</th></tr>
+{% for label, value, change in naver.totals %}
+<tr><td>{{ label }}</td><td>{{ value }}</td><td>{{ change }}</td></tr>
+{% endfor %}
+</tbody></table>
+<h3>클릭 TOP 키워드 ({{ naver.window }})</h3>
+<table><tbody>
+<tr><th>키워드</th><th>클릭</th><th>노출</th><th>CTR</th></tr>
+{% for k in naver.keywords %}
+<tr><td>{{ k.item }}</td><td>{{ k.clicks }}</td><td>{{ k.imp }}</td><td>{{ k.ctr }}</td></tr>
+{% endfor %}
+</tbody></table>
+<h3>급상승 키워드 ({{ naver.window }})</h3>
+<ul>
+{% for kw, n in naver.rising %}
+<li>{{ kw }} (+{{ n }} 클릭)</li>
+{% endfor %}
+</ul>
+<h3>SEO 기회 키워드: 노출은 많은데 CTR 낮음 ({{ naver.window }})</h3>
+<table><tbody>
+<tr><th>키워드</th><th>클릭</th><th>노출</th><th>CTR</th></tr>
+{% for k in naver.seo %}
+<tr><td>{{ k.item }}</td><td>{{ k.clicks }}</td><td>{{ k.imp }}</td><td>{{ k.ctr }}</td></tr>
+{% endfor %}
+</tbody></table>
+<h3>URL TOP ({{ naver.window }})</h3>
+<table><tbody>
+<tr><th>페이지</th><th>클릭</th><th>노출</th><th>CTR</th><th>네이버 랜딩 재방문율</th></tr>
+{% for u in naver.urls %}
+<tr><td>{{ u.item }}</td><td>{{ u.clicks }}</td><td>{{ u.imp }}</td><td>{{ u.ctr }}</td><td>{{ u.revisit }}</td></tr>
+{% endfor %}
+</tbody></table>
+{% else %}
+<p>네이버 데이터 수집 실패</p>
+{% endif %}
+{% if unsupported %}
+<h2>미지원 지표</h2>
+<ul>
+{% for m in unsupported %}
+<li>{{ m }}</li>
+{% endfor %}
+</ul>
+{% endif %}
