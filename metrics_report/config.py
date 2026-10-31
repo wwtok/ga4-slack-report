@@ -51,6 +51,8 @@ class Settings:
     secrets: Secrets
     okr_links: Dict[str, str] = field(default_factory=dict)
     amplitude_links: Dict[str, str] = field(default_factory=lambda: dict(DEFAULT_AMPLITUDE_LINKS))
+    confluence_test_space_key: str = ""
+    confluence_test_parent_page_id: Optional[str] = None
 
 
 def _require(env: Mapping[str, str], name: str) -> str:
@@ -76,6 +78,7 @@ def load_settings(path: str = "metrics.yaml", env: Mapping[str, str] = os.enviro
         raw = yaml.safe_load(f)
 
     parent = raw.get("confluence_parent_page_id")
+    test_parent = raw.get("confluence_test_parent_page_id")
     return Settings(
         amplitude_project_id=str(raw["amplitude_project_id"]),
         naver_site=raw["naver_site"],
@@ -84,12 +87,26 @@ def load_settings(path: str = "metrics.yaml", env: Mapping[str, str] = os.enviro
         confluence_base_url=raw["confluence_base_url"],
         confluence_space_key=raw["confluence_space_key"],
         confluence_parent_page_id=None if parent is None else str(parent),
+        confluence_test_space_key=raw.get("confluence_test_space_key") or "",
+        confluence_test_parent_page_id=None if test_parent is None else str(test_parent),
         data_dir=Path(raw["data_dir"]),
         out_dir=Path(raw["out_dir"]),
         okr_links=dict(raw.get("okr_links") or {}),
         amplitude_links=dict(raw.get("amplitude_links") or DEFAULT_AMPLITUDE_LINKS),
         secrets=_secrets(env),
     )
+
+
+def confluence_space(settings: Settings, target: SlackTarget) -> str:
+    if target is SlackTarget.TEST:
+        return settings.confluence_test_space_key
+    return settings.confluence_space_key
+
+
+def confluence_parent(settings: Settings, target: SlackTarget) -> Optional[str]:
+    if target is SlackTarget.TEST:
+        return settings.confluence_test_parent_page_id
+    return settings.confluence_parent_page_id
 
 
 def webhook(settings: Settings, target: SlackTarget) -> str:

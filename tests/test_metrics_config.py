@@ -55,3 +55,12 @@ def test_missing_secret_raises(tmp_path):
 def test_amplitude_links_default():
     from metrics_report.config import DEFAULT_AMPLITUDE_LINKS, Settings
     assert "Amplitude 홈" in DEFAULT_AMPLITUDE_LINKS
+
+
+def test_test_confluence_settings(tmp_path):
+    p = tmp_path / "m.yaml"
+    p.write_text(YAML + 'confluence_test_space_key: "TS"\nconfluence_test_parent_page_id: 5\n')
+    s = load_settings(str(p), ENV)
+    assert (s.confluence_test_space_key, s.confluence_test_parent_page_id) == ("TS", "5")
+    s = load_settings(_yaml(tmp_path), ENV)
+    assert (s.confluence_test_space_key, s.confluence_test_parent_page_id) == ("", None)

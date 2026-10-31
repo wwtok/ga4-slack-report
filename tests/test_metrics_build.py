@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -55,7 +55,7 @@ def fake_ranks(settings, window_days, top_n=1000):
 
 
 def fake_totals(settings, window_days):
-    return [DailyTotal(date(2026, 10, 24), 100, 5)]
+    return [DailyTotal(date(2026, 10, 24) + timedelta(days=i), 100, 5) for i in range(7)]
 
 
 def failing(*a, **k):
@@ -73,7 +73,7 @@ def test_weekly_report_period_and_label(settings, store):
     assert r.amplitude["wau"].current == 200
     assert r.amplitude["mau"] is None
     assert r.amplitude["signups"] is None
-    assert r.naver.impressions.current == 100
+    assert r.naver.impressions.current == 700
 
 
 def test_naver_failure_keeps_report(settings, store):
@@ -165,3 +165,30 @@ def test_generated_at_uses_injected_clock(settings, store):
     t = datetime(2026, 11, 1, 9, 5)
     r = build_report("weekly", RUN, settings, store, FakeAmp(), fake_ranks, fake_totals, now=lambda: t)
     assert r.generated_at == t and r.project_id == settings.amplitude_project_id
+
+
+def test_snapshot_and_window_use_api_latest_date(settings, store):
+    from metrics_report.naver import Dated
+
+    def ranks(s, w, top_n=1000):
+        out = Dated(fake_ranks(s, w))
+        out.latest = date(2026, 10, 29)
+        return out
+
+    r = build(settings, store, ranks=ranks)
+    assert r.naver.window == Period(date(2026, 10, 23), date(2026, 10, 29))
+    assert store.ranks(date(2026, 10, 29), 7, "keyword")
+    assert not store.ranks(date(2026, 11, 1), 7, "keyword")
+
+
+def test_incomplete_current_period_totals_is_none(settings, store):
+    r = build(settings, store, totals=lambda s, w: fake_totals(s, w)[:6])
+    assert r.naver.impressions is None
+
+
+def test_incomplete_previous_period_gives_no_delta(settings, store):
+    def totals(s, w):
+        return fake_totals(s, w) + [DailyTotal(date(2026, 10, 20), 100, 5)]
+
+    r = build(settings, store, totals=totals)
+    assert r.naver.impressions.current == 700 and r.naver.impressions.previous is None

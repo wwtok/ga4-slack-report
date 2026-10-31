@@ -6,6 +6,9 @@ confluence_base_url: "https://noo9vote.atlassian.net/wiki"
 # claychanwoo 개인 스페이스(개발용). 운영 전환 시 SD로 교체
 confluence_space_key: "~7120206b92eef971fc48959e0f8d99c17c6bc9"
 confluence_parent_page_id: null
+# --test 게시 전용 (운영 스페이스와 분리)
+confluence_test_space_key: "~7120206b92eef971fc48959e0f8d99c17c6bc9"
+confluence_test_parent_page_id: null
 data_dir: "data"
 out_dir: "out"
 okr_links:

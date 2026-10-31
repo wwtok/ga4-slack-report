@@ -7,14 +7,17 @@ import urllib.parse
 import urllib.request
 
 from ga4_report.slack import send_webhook
-from metrics_report.config import Settings, SlackTarget, webhook
+from metrics_report.config import (
+    Settings, SlackTarget, confluence_parent, confluence_space, webhook,
+)
 from metrics_report.metrics import Report
-from metrics_report.render import render_confluence, render_glossary, render_slack
+from metrics_report.render import esc, render_confluence, render_glossary, render_slack
 from metrics_report.store import STATUS_OK, Store
 
 ROOT_TITLE = "📊 지표 리포트"
-WEEKLY_TITLE = "주간"
-MONTHLY_TITLE = "월간"
+WEEKLY_TITLE = "📊 주간 리포트"
+MONTHLY_TITLE = "📊 월간 리포트"
+HTTP_TIMEOUT_SEC = 60
 JOB_PUBLISH = "publish"
 STATUS_FAILED = "failed"
 
@@ -23,7 +26,7 @@ class ConfluenceClient:
     def __init__(self, base_url: str, email: str, api_token: str,
                  opener=urllib.request.urlopen) -> None:
         self._base = base_url.rstrip("/")
-        self._opener = opener
+        self._opener = lambda req: opener(req, timeout=HTTP_TIMEOUT_SEC)
         cred = base64.b64encode(f"{email}:{api_token}".encode()).decode()
         self._headers = {"Authorization": f"Basic {cred}", "Content-Type": "application/json"}
 
@@ -91,7 +94,7 @@ def publish(
 ) -> str:
     """Create the page (if missing) then post to Slack; idempotent per label."""
     label = report.label
-    space = settings.confluence_space_key
+    space = confluence_space(settings, target)
     if store.run_done(JOB_PUBLISH, label):
         return conf.find_page(space, label) or ""
 
@@ -99,7 +102,7 @@ def publish(
         url = conf.find_page(space, label)
         if url is None:
             ids = conf.ensure_parents(
-                space, settings.confluence_parent_page_id, render_glossary(settings.okr_links)
+                space, confluence_parent(settings, target), render_glossary(settings.okr_links)
             )
             body = render_confluence(report, glossary_url=conf.page_url(ids["root"]))
             _, url = conf.create_page(space, label, body, ids[report.kind])
@@ -113,6 +116,8 @@ def publish(
 
 def alert(settings: Settings, step: str, reason: str,
           target: SlackTarget = SlackTarget.PROD, send=send_webhook) -> None:
-    text = f"⚠️ {step} 실패: {reason}"
+    text = f"⚠️ {step} 실패: {esc(reason)}"
     block = {"type": "section", "text": {"type": "mrkdwn", "text": text}}
-    send(webhook(settings, target), [block])
+    # alerts stay out of the team channel when a test webhook exists
+    url = settings.secrets.slack_test_webhook_url or webhook(settings, target)
+    send(url, [block])

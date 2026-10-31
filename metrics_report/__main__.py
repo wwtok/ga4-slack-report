@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from datetime import date, datetime
 from functools import partial
 from pathlib import Path
@@ -38,6 +39,11 @@ def db_path(settings, test: bool) -> Path:
     return settings.data_dir / (TEST_DB_NAME if test else DB_NAME)
 
 
+def uses_test_store(args) -> bool:
+    # dry-runs must not write snapshots into the production store
+    return getattr(args, "test", False) or getattr(args, "dry_run", False)
+
+
 def main(argv: list[str] | None = None) -> None:
     # venv Python lacks system CAs on this Mac
     if "SSL_CERT_FILE" not in os.environ and Path(SYSTEM_CA).exists():
@@ -45,7 +51,7 @@ def main(argv: list[str] | None = None) -> None:
 
     args = _parser().parse_args(argv)
     settings = load_settings()
-    store = Store(db_path(settings, getattr(args, "test", False)))
+    store = Store(db_path(settings, uses_test_store(args)))
     today = date.today()
 
     if args.cmd == "collect":
@@ -73,6 +79,8 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     report = build.build_report(args.kind, args.date or today, settings, store, amp)
+    if report.naver is None:
+        print("warning: 네이버 데이터 없이 축약 리포트", file=sys.stderr)
     if args.dry_run:
         print(build.write_dry_run(report, settings))
         return

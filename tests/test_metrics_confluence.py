@@ -33,8 +33,10 @@ class FakeOpener:
     def __init__(self, pages=None):
         self.pages = dict(pages or {})
         self.reqs = []
+        self.timeouts = []
 
-    def __call__(self, req):
+    def __call__(self, req, timeout=None):
+        self.timeouts.append(timeout)
         self.reqs.append(req)
         links = lambda i: {"base": BASE, "webui": f"/spaces/S/pages/{i}"}
         list_links = lambda i: {"webui": f"/spaces/S/pages/{i}"}
@@ -86,7 +88,7 @@ def test_ensure_parents_creates_missing_only():
     op = FakeOpener({"📊 지표 리포트": "1"})
     ids = _client(op).ensure_parents("S", None, "<p>g</p>")
     assert ids["root"] == "1"
-    assert [p["title"] for p in op.posts()] == ["주간", "월간"]
+    assert [p["title"] for p in op.posts()] == ["📊 주간 리포트", "📊 월간 리포트"]
     assert all(p["ancestors"] == [{"id": "1"}] for p in op.posts())
 
 
@@ -94,8 +96,9 @@ def test_ensure_parents_creates_missing_only():
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings("1", "https://x.kr", "h", "u", BASE, "S", None, tmp_path / "d",
-                    tmp_path / "o", Secrets("a", "b", "c", "d", "prod", "test"))
+    return Settings("1", "https://x.kr", "h", "u", BASE, "S", "P", tmp_path / "d",
+                    tmp_path / "o", Secrets("a", "b", "c", "d", "prod", "test"),
+                    confluence_test_space_key="TS", confluence_test_parent_page_id="TP")
 
 
 @pytest.fixture
@@ -152,3 +155,44 @@ def test_alert_text_and_missing_webhook(settings):
     settings.secrets.slack_test_webhook_url = ""
     with pytest.raises(ValueError, match="SLACK_TEST_WEBHOOK_URL is not set"):
         alert(settings, "x", "y", SlackTarget.TEST, lambda u, b: None)
+
+
+def test_requests_use_timeout():
+    op = FakeOpener()
+    c = _client(op)
+    c.find_page("S", "t")
+    c.create_page("S", "t", "b", None)
+    assert op.timeouts == [60, 60]
+
+
+def _spaces(op):
+    return [json.loads(r.data)["space"]["key"] for r in op.reqs if r.get_method() == "POST"]
+
+
+def test_test_target_uses_test_space_and_parent(settings, store):
+    op = FakeOpener()
+    publish(_report(), settings, store, _client(op), SlackTarget.TEST, lambda u, b: None)
+    assert set(_spaces(op)) == {"TS"}
+    assert op.posts()[0]["ancestors"] == [{"id": "TP"}]  # root under test parent
+
+
+def test_prod_target_uses_prod_space_and_parent(settings, store):
+    op = FakeOpener()
+    publish(_report(), settings, store, _client(op), SlackTarget.PROD, lambda u, b: None)
+    assert set(_spaces(op)) == {"S"}
+    assert op.posts()[0]["ancestors"] == [{"id": "P"}]
+
+
+def test_alert_escapes_reason(settings):
+    sent = []
+    alert(settings, "x", "<b>&", SlackTarget.TEST, lambda u, b: sent.append(b))
+    assert "&lt;b&gt;&amp;" in json.dumps(sent[0])
+
+
+def test_alert_prefers_test_webhook(settings):
+    sent = []
+    alert(settings, "x", "y", SlackTarget.PROD, lambda u, b: sent.append(u))
+    assert sent == ["test"]
+    settings.secrets.slack_test_webhook_url = ""
+    alert(settings, "x", "y", SlackTarget.PROD, lambda u, b: sent.append(u))
+    assert sent[-1] == "prod"

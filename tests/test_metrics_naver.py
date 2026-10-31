@@ -119,3 +119,29 @@ def test_fetch_raises_with_js_error_message(monkeypatch):
     )
     with pytest.raises(NaverCollectError, match="net down"):
         naver.fetch_ranks(SETTINGS, 7)
+
+
+def test_fetch_exposes_latest_date(monkeypatch):
+    monkeypatch.setattr(
+        naver.subprocess, "run", _run_returning(json.dumps(_load("naver_rank.json")))
+    )
+    assert naver.fetch_ranks(SETTINGS, 7).latest == date(2026, 1, 2)
+    monkeypatch.setattr(
+        naver.subprocess, "run", _run_returning(json.dumps(_load("naver_daily.json")))
+    )
+    assert naver.fetch_daily_totals(SETTINGS, 30).latest == date(2026, 1, 2)
+
+
+def test_malformed_payload_is_collect_error():
+    with pytest.raises(NaverCollectError, match="unexpected response"):
+        parse_ranks({"items": [{"querys": [{"key": "a"}]}]}, "keyword")
+    with pytest.raises(NaverCollectError, match="unexpected response"):
+        parse_daily({"items": [{"logs": [{"date": "bad", "exposeCount": 1, "clickCount": 1}]}]})
+
+
+def test_missing_latest_date_is_collect_error(monkeypatch):
+    p = _load("naver_rank.json")
+    del p["meta"]
+    monkeypatch.setattr(naver.subprocess, "run", _run_returning(json.dumps(p)))
+    with pytest.raises(NaverCollectError, match="unexpected response"):
+        naver.fetch_ranks(SETTINGS, 7)

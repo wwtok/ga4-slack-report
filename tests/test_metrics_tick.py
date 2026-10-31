@@ -5,7 +5,7 @@ import pytest
 from metrics_report.metrics import Report
 from metrics_report.periods import monthly_label, monthly_period, weekly_label, weekly_period
 from metrics_report.store import Store
-from metrics_report.tick import KST, Deps, tick
+from metrics_report.tick import KST, NAVER_DEADLINE_HOUR, Deps, tick
 
 
 def at(y, m, d, h, mi=0):
@@ -18,8 +18,9 @@ def store(tmp_path):
 
 
 class Fake:
-    def __init__(self, store, fail_collect=False):
+    def __init__(self, store, fail_collect=False, no_naver=False):
         self.store, self.fail_collect = store, fail_collect
+        self.no_naver = no_naver
         self.collected, self.published, self.alerts = [], [], []
 
     def collect(self, d):
@@ -30,7 +31,7 @@ class Fake:
     def build(self, kind, d):
         p = monthly_period(d) if kind == "monthly" else weekly_period(d)
         label = monthly_label(p) if kind == "monthly" else weekly_label(p)
-        return Report(kind, p, label, {}, None)
+        return Report(kind, p, label, {}, None if self.no_naver else object())
 
     def publish(self, r):
         self.published.append(r.kind)
@@ -129,3 +130,18 @@ def test_tick_alert_send_failure_retries_next_tick(store, capsys):
     assert "alert failed" in capsys.readouterr().err
     run(f, store, at(2026, 10, 31, 14))
     assert len(f.alerts) == 1
+
+
+def test_tick_missing_naver_before_deadline_alerts_and_retries(store):
+    f = Fake(store, no_naver=True)
+    ran = run(f, store, at(2026, 10, 31, 10))
+    assert "weekly" not in ran and f.published == []
+    assert [a[0] for a in f.alerts] == ["weekly", "monthly"]
+    run(f, store, at(2026, 10, 31, 11))  # alert once per day
+    assert len(f.alerts) == 2
+
+
+def test_tick_missing_naver_after_deadline_publishes_reduced(store):
+    f = Fake(store, no_naver=True)
+    assert "weekly" in run(f, store, at(2026, 10, 31, NAVER_DEADLINE_HOUR))
+    assert f.published.count("weekly") == 1

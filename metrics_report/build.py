@@ -15,7 +15,7 @@ from metrics_report.metrics import (
     Delta, NaverSection, Report, delta, naver_share, naver_totals,
     normalize_path, rising_keywords, seo_opportunities, top_by_clicks,
 )
-from metrics_report.naver import NaverCollectError, fetch_daily_totals, fetch_ranks
+from metrics_report.naver import NaverCollectError, fetch_daily_totals, fetch_ranks, latest_of
 from metrics_report.periods import (
     Period, monthly_label, monthly_period, previous_period, weekly_label, weekly_period,
 )
@@ -117,12 +117,16 @@ def _amplitude(
     }
 
 
-def _totals_deltas(cur: list, prev: list) -> tuple[Delta | None, ...]:
-    # no stored days for the period -> unknown (None), not zero
-    if not cur:
+def _days(p: Period) -> int:
+    return (p.end - p.start).days + 1
+
+
+def _totals_deltas(cur: list, prev: list, p: Period, pp: Period) -> tuple[Delta | None, ...]:
+    # a period with any missing day is unknown (None), not a fake drop
+    if len(cur) != _days(p):
         return (None, None, None)
-    p = naver_totals(prev) if prev else (None, None, None)
-    return tuple(delta(c, q) for c, q in zip(naver_totals(cur), p))
+    q = naver_totals(prev) if len(prev) == _days(pp) else (None, None, None)
+    return tuple(delta(c, v) for c, v in zip(naver_totals(cur), q))
 
 
 def _naver_section(
@@ -130,8 +134,8 @@ def _naver_section(
     amp: AmplitudeClient, naver_fetch, totals_fetch,
 ) -> NaverSection:
     days = MONTH_DAYS if kind == "monthly" else WEEK_DAYS
-    snap = run_date - timedelta(days=DATA_LAG_DAYS)
     rows = naver_fetch(settings, days)
+    snap = latest_of(rows, run_date - timedelta(days=DATA_LAG_DAYS))
     store.save_ranks(snap, days, rows)
     store.save_daily_totals(totals_fetch(settings, TOTALS_KEEP_BACKFILL))
 
@@ -144,7 +148,7 @@ def _naver_section(
 
     pp = previous_period(p)
     cur_rows, prev_rows = store.daily_totals(p), store.daily_totals(pp)
-    totals = _totals_deltas(cur_rows, prev_rows)
+    totals = _totals_deltas(cur_rows, prev_rows, p, pp)
 
     c = pp
     top = top_by_clicks(rows, "url", TOP_N)
@@ -204,14 +208,16 @@ def build_report(
 
 
 def collect_daily(settings: Settings, store: Store, today: date) -> None:
-    snap = today - timedelta(days=DATA_LAG_DAYS)
-    store.save_ranks(snap, DAILY_WINDOW, fetch_ranks(settings, DAILY_WINDOW))
+    rows = fetch_ranks(settings, DAILY_WINDOW)
+    snap = latest_of(rows, today - timedelta(days=DATA_LAG_DAYS))
+    store.save_ranks(snap, DAILY_WINDOW, rows)
     store.save_daily_totals(fetch_daily_totals(settings, TOTALS_KEEP_DAILY))
 
 
 def backfill(settings: Settings, store: Store, today: date) -> None:
-    snap = today - timedelta(days=DATA_LAG_DAYS)
-    store.save_ranks(snap, TOTALS_KEEP_BACKFILL, fetch_ranks(settings, TOTALS_KEEP_BACKFILL))
+    rows = fetch_ranks(settings, TOTALS_KEEP_BACKFILL)
+    snap = latest_of(rows, today - timedelta(days=DATA_LAG_DAYS))
+    store.save_ranks(snap, TOTALS_KEEP_BACKFILL, rows)
     store.save_daily_totals(fetch_daily_totals(settings, TOTALS_KEEP_BACKFILL))
 
 

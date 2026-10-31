@@ -15,6 +15,7 @@ from metrics_report.store import Store
 KST = ZoneInfo("Asia/Seoul")
 COLLECT_HOUR = 12
 REPORT_HOUR = 9
+NAVER_DEADLINE_HOUR = 18
 SATURDAY = 5
 FIRST_DAY = 1
 JOB_COLLECT = "collect"
@@ -58,7 +59,11 @@ def tick(now: datetime, settings, store: Store, deps: Deps) -> list[str]:
         store.mark_run(JOB_COLLECT, today.isoformat(), STATUS_OK)
 
     def report(kind: str) -> None:
-        deps.publish(deps.build(kind, today))
+        rep = deps.build(kind, today)
+        # retry hourly until the deadline, then ship the reduced report
+        if rep.naver is None and now.hour < NAVER_DEADLINE_HOUR:
+            raise RuntimeError(f"네이버 데이터 없음, {NAVER_DEADLINE_HOUR}시까지 재시도")
+        deps.publish(rep)
 
     weekly = weekly_label(weekly_period(today))
     monthly = monthly_label(monthly_period(today))
