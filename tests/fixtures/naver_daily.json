@@ -1,0 +1,8 @@
+{"code": 0, "message": "SUCCESS", "meta": {"latestDate": "20260102"}, "items": [{
+  "period": {"period": 30},
+  "querys": [], "urls": [],
+  "logs": [
+    {"date": "20260102", "clickCount": 4, "exposeCount": 90, "ctr": 4.4, "exposedRank": 1, "wmtSite": false},
+    {"date": "20260101", "clickCount": 3, "exposeCount": 80, "ctr": 3.7, "exposedRank": 1, "wmtSite": false}
+  ]
+}]}

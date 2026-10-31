@@ -1,0 +1,23 @@
+amplitude_project_id: "854978"
+naver_site: "https://www.noo9.kr"
+naver_site_hash: "8e352bf0c86e587880e7dcd0f80a414fc844acb31b50755f77ae25ac4daa26a8"
+aside_account: "u7"
+confluence_base_url: "https://noo9vote.atlassian.net/wiki"
+# 운영 게시: 누구뽑지 스페이스, 홈 페이지 아래
+confluence_space_key: "SD"
+confluence_parent_page_id: "33280"
+# --test 게시 전용 (운영 스페이스와 분리)
+confluence_test_space_key: "~7120206b92eef971fc48959e0f8d99c17c6bc9"
+confluence_test_parent_page_id: null
+data_dir: "data"
+out_dir: "out"
+okr_links:
+  "KR 3.1": "https://noo9vote.atlassian.net/wiki/spaces/SD/pages/79921173"
+  "KR 3.1.1": "https://noo9vote.atlassian.net/wiki/spaces/SD/pages/79855634"
+
+# 데이터 출처란 Amplitude 링크 (Confluence 리포트 하단)
+amplitude_links:
+  메인 대시보드: "https://app.amplitude.com/analytics/delicate-lab-505752/dashboard/os3o8ubq"
+  일별 활성 사용자: "https://app.amplitude.com/analytics/delicate-lab-505752/chart/ndmq82pl"
+  일별 신규 사용자: "https://app.amplitude.com/analytics/delicate-lab-505752/chart/l2t9qcey"
+  리텐션: "https://app.amplitude.com/analytics/delicate-lab-505752/chart/cquvwt5i"

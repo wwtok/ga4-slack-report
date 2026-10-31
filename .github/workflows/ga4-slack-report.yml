@@ -1,8 +1,6 @@
 name: GA4 Report → Slack
 
 on:
-  schedule:
-    - cron: "0 0 * * 6"  # Every Saturday 09:00 KST (Saturday 00:00 UTC)
   workflow_dispatch:
 
 jobs:

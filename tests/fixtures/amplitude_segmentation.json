@@ -1,0 +1,6 @@
+{"data": {
+  "seriesLabels": [[0, "m.search.naver.com"], [0, "(none)"], [0, "www.example.com"]],
+  "seriesCollapsed": [[{"setId": "", "value": 7}], [{"setId": "", "value": 5}], [{"setId": "", "value": 2}]],
+  "series": [[3, 4], [2, 3], [1, 1]],
+  "xValues": ["2026-01-01", "2026-01-02"]
+}}

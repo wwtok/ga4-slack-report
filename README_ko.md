@@ -220,6 +220,46 @@ schedule:
 
 Actions 탭 > "GA4 Report -> Slack" > **Run workflow**
 
+## 지표 리포트 (Amplitude + 네이버 서치어드바이저)
+
+`metrics_report/` 패키지. Amplitude 지표와 네이버 서치어드바이저 유입 데이터를 모아 주간(토 09시)·월간(1일 09시) 리포트를 Confluence에 게시하고 Slack에 알린다. 매일 12시 이후 일별 수집도 한다. GA4 GitHub Actions 스케줄은 중단했다(수동 `workflow_dispatch`만 유지).
+
+- `.env`: `AMPLITUDE_API_KEY`, `AMPLITUDE_SECRET_KEY`, `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN`, `SLACK_WEBHOOK_URL`, `SLACK_TEST_WEBHOOK_URL`
+- `metrics.yaml`: `amplitude_project_id`, `naver_site`, `naver_site_hash`, `aside_account`, `confluence_base_url`, `confluence_space_key`, `confluence_parent_page_id`, `confluence_test_space_key`, `confluence_test_parent_page_id`, `data_dir`, `out_dir`, `okr_links`
+- 네이버 수집은 Aside "누구뽑지" 프로필(`u7`, 네이버 `noo` 로그인)이 필요하다. `aside` CLI가 PATH에 있어야 한다.
+- 서치어드바이저는 비공식 API라 예고 없이 깨질 수 있다.
+
+```bash
+python -m metrics_report report weekly|monthly [--date YYYY-MM-DD] [--dry-run] [--test]
+python -m metrics_report collect    # 일별 수집
+python -m metrics_report backfill   # 과거 데이터 채우기
+python -m metrics_report tick [--test]  # 시간당 스케줄러(도래한 작업만 1회 실행)
+```
+
+`--test`는 테스트 Slack 웹훅과 별도 DB(`data/metrics-test.db`)를 쓴다. 테스트 DB는 비어 있어 두 번째 테스트 실행 전까지 전주 비교가 없다.
+
+`--test`는 Confluence도 테스트 스페이스(`confluence_test_space_key`)·테스트 부모 페이지(`confluence_test_parent_page_id`)에 게시한다. `--dry-run`도 테스트 DB를 쓰므로 운영 DB에 스냅샷이 남지 않는다.
+
+네이버 데이터 신선도: API `meta.latestDate`를 기준일로 쓴다(실행일-1 가정 안 함). 기간 내 일별 합계가 하루라도 빠지면 해당 기간 노출/클릭/CTR은 비교하지 않고 숨긴다.
+
+네이버 실패 정책(`tick`): 네이버 데이터가 없으면 18:00 전에는 게시하지 않고 오류로 처리한다(하루 1회 알림, 다음 시간 tick이 재시도). 18:00 이후에는 네이버 섹션 없는 축약 리포트를 게시한다. 수동 `report`는 시간 제한 없이 축약 리포트를 게시하고 stderr에 경고를 출력한다.
+
+알림 경로: 실패 알림은 `SLACK_TEST_WEBHOOK_URL`이 있으면 그쪽으로, 없으면 대상 웹훅으로 보낸다(팀 채널 노이즈 방지). 리포트는 항상 대상 웹훅으로 간다.
+
+네이버 데이터 없이 게시된 리포트 복구:
+1. `data/metrics.db`에서 해당 행 삭제: `DELETE FROM runs WHERE job='publish' AND label='<리포트 라벨>';`
+2. Confluence의 해당 페이지를 휴지통으로 이동한다.
+3. 다시 실행한다(`report weekly|monthly --date ...` 또는 다음 `tick`).
+
+launchd(매시간):
+
+```bash
+./scripts/install_launchd.sh              # 설치
+./scripts/install_launchd.sh --uninstall  # 제거
+```
+
+로그: `~/Library/Logs/noo9-metrics-report.log`
+
 ## 프로젝트 구조
 
 ```

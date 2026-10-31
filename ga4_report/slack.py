@@ -9,7 +9,10 @@ from typing import Optional
 from slack_sdk import WebClient
 
 
-def send_webhook(url: str, blocks: list[dict]) -> None:
+DEFAULT_TIMEOUT_SEC = 60
+
+
+def send_webhook(url: str, blocks: list[dict], timeout: float = DEFAULT_TIMEOUT_SEC) -> None:
     """Send Slack message via Incoming Webhook."""
     payload = json.dumps({"blocks": blocks}).encode()
     req = urllib.request.Request(
@@ -17,7 +20,7 @@ def send_webhook(url: str, blocks: list[dict]) -> None:
         data=payload,
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         if resp.status != 200:
             raise RuntimeError(f"Slack webhook failed: {resp.status}")
 

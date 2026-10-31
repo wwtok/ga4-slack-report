@@ -1,0 +1,119 @@
+"""metrics.yaml + env secrets loader."""
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+from typing import Dict, Mapping, Optional
+
+import yaml
+
+ENV_AMPLITUDE_API_KEY = "AMPLITUDE_API_KEY"
+ENV_AMPLITUDE_SECRET_KEY = "AMPLITUDE_SECRET_KEY"
+ENV_CONFLUENCE_EMAIL = "CONFLUENCE_EMAIL"
+ENV_CONFLUENCE_API_TOKEN = "CONFLUENCE_API_TOKEN"
+ENV_SLACK_WEBHOOK_URL = "SLACK_WEBHOOK_URL"
+ENV_SLACK_TEST_WEBHOOK_URL = "SLACK_TEST_WEBHOOK_URL"
+
+
+DEFAULT_AMPLITUDE_LINKS = {
+    "Amplitude 홈": "https://app.amplitude.com/analytics/delicate-lab-505752/home"
+}
+
+
+class SlackTarget(Enum):
+    PROD = ENV_SLACK_WEBHOOK_URL
+    TEST = ENV_SLACK_TEST_WEBHOOK_URL
+
+
+@dataclass
+class Secrets:
+    amplitude_api_key: str
+    amplitude_secret_key: str
+    confluence_email: str
+    confluence_api_token: str
+    slack_webhook_url: str = ""
+    slack_test_webhook_url: str = ""
+
+
+@dataclass
+class Settings:
+    amplitude_project_id: str
+    naver_site: str
+    naver_site_hash: str
+    aside_account: str
+    confluence_base_url: str
+    confluence_space_key: str
+    confluence_parent_page_id: Optional[str]
+    data_dir: Path
+    out_dir: Path
+    secrets: Secrets
+    okr_links: Dict[str, str] = field(default_factory=dict)
+    amplitude_links: Dict[str, str] = field(default_factory=lambda: dict(DEFAULT_AMPLITUDE_LINKS))
+    confluence_test_space_key: str = ""
+    confluence_test_parent_page_id: Optional[str] = None
+
+
+def _require(env: Mapping[str, str], name: str) -> str:
+    value = env.get(name)
+    if not value:
+        raise ValueError(f"{name} is not set")
+    return value
+
+
+def _secrets(env: Mapping[str, str]) -> Secrets:
+    return Secrets(
+        amplitude_api_key=_require(env, ENV_AMPLITUDE_API_KEY),
+        amplitude_secret_key=_require(env, ENV_AMPLITUDE_SECRET_KEY),
+        confluence_email=_require(env, ENV_CONFLUENCE_EMAIL),
+        confluence_api_token=_require(env, ENV_CONFLUENCE_API_TOKEN),
+        slack_webhook_url=env.get(ENV_SLACK_WEBHOOK_URL, ""),
+        slack_test_webhook_url=env.get(ENV_SLACK_TEST_WEBHOOK_URL, ""),
+    )
+
+
+def load_settings(path: str = "metrics.yaml", env: Mapping[str, str] = os.environ) -> Settings:
+    with open(path, encoding="utf-8") as f:
+        raw = yaml.safe_load(f)
+
+    parent = raw.get("confluence_parent_page_id")
+    test_parent = raw.get("confluence_test_parent_page_id")
+    return Settings(
+        amplitude_project_id=str(raw["amplitude_project_id"]),
+        naver_site=raw["naver_site"],
+        naver_site_hash=raw["naver_site_hash"],
+        aside_account=raw["aside_account"],
+        confluence_base_url=raw["confluence_base_url"],
+        confluence_space_key=raw["confluence_space_key"],
+        confluence_parent_page_id=None if parent is None else str(parent),
+        confluence_test_space_key=raw.get("confluence_test_space_key") or "",
+        confluence_test_parent_page_id=None if test_parent is None else str(test_parent),
+        data_dir=Path(raw["data_dir"]),
+        out_dir=Path(raw["out_dir"]),
+        okr_links=dict(raw.get("okr_links") or {}),
+        amplitude_links=dict(raw.get("amplitude_links") or DEFAULT_AMPLITUDE_LINKS),
+        secrets=_secrets(env),
+    )
+
+
+def confluence_space(settings: Settings, target: SlackTarget) -> str:
+    if target is SlackTarget.TEST:
+        return settings.confluence_test_space_key
+    return settings.confluence_space_key
+
+
+def confluence_parent(settings: Settings, target: SlackTarget) -> Optional[str]:
+    if target is SlackTarget.TEST:
+        return settings.confluence_test_parent_page_id
+    return settings.confluence_parent_page_id
+
+
+def webhook(settings: Settings, target: SlackTarget) -> str:
+    url = {
+        SlackTarget.PROD: settings.secrets.slack_webhook_url,
+        SlackTarget.TEST: settings.secrets.slack_test_webhook_url,
+    }[target]
+    if not url:
+        raise ValueError(f"{target.value} is not set")
+    return url
