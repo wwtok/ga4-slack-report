@@ -17,6 +17,7 @@ NEW = "신규"
 UP, DOWN, FLAT = "▲", "▼", "–"
 # fractions shown as percent, change as %p
 RATE_KEYS = {"revisit_rate", "revisit_naver", "revisit_other", "d1", "d7", "naver_share", "stickiness"}
+WEEKDAYS = "월화수목금토일"
 NAVER_FAILED = "네이버 데이터 수집 실패"
 
 _env = Environment(
@@ -118,7 +119,7 @@ def render_slack(report: Report, page_url: str) -> dict:
 
 
 SECTIONS = (
-    ("사용자", (("DAU (일평균)", "dau_avg"), ("WAU", "wau"), ("MAU", "mau"),
+    ("사용자", (("WAU", "wau"), ("MAU", "mau"),
               ("신규 사용자", "new_users"), ("로그인 사용자", "signups"))),
     ("참여", (("페이지뷰", "pageviews"), ("사용자당 페이지뷰", "pv_per_user"), ("세션", "sessions"))),
     ("리텐션", (("재방문율", "revisit_rate"), ("네이버 유입 재방문율", "revisit_naver"),
@@ -164,7 +165,7 @@ def _naver_ctx(r: Report) -> dict | None:
         "rising": n.rising,
         "seo": [row(x) for x in n.seo],
         "urls": [
-            {**row(x) | {"item": normalize_path(x.item)}, "revisit": fmt_rate(rv) if rv is not None else "-"}
+            {**row(x) | {"item": normalize_path(x.item), "href": x.item}, "revisit": fmt_rate(rv) if rv is not None else "-"}
             for x, rv in n.top_urls
         ],
     }
@@ -176,6 +177,7 @@ def render_confluence(report: Report, glossary_url: str | None) -> str:
         glossary_url=glossary_url,
         insights=report.insights or build_insights(report),
         sections=_sections(report),
+        daily_dau=[(f"{d:%m-%d} ({WEEKDAYS[d.weekday()]})", n) for d, n in report.daily_dau],
         naver=_naver_ctx(report),
         unsupported=report.unsupported,
     )

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Literal, NamedTuple
 from urllib.parse import unquote, urlsplit
 
@@ -83,3 +84,4 @@ class Report:
     naver: NaverSection | None
     insights: list[str] = field(default_factory=list)
     unsupported: list[str] = field(default_factory=list)
+    daily_dau: list[tuple[date, int]] = field(default_factory=list)

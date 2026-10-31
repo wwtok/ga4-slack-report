@@ -1,6 +1,7 @@
 """Hourly scheduler: run due jobs (collect, weekly, monthly) once each."""
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Callable
@@ -8,6 +9,7 @@ from zoneinfo import ZoneInfo
 
 from metrics_report.metrics import Report
 from metrics_report.periods import monthly_label, monthly_period, weekly_label, weekly_period
+from metrics_report.confluence import JOB_PUBLISH, STATUS_OK
 from metrics_report.store import Store
 
 KST = ZoneInfo("Asia/Seoul")
@@ -17,7 +19,6 @@ SATURDAY = 5
 FIRST_DAY = 1
 JOB_COLLECT = "collect"
 JOB_ALERT = "alert"
-STATUS_OK = "ok"
 
 
 @dataclass
@@ -33,11 +34,12 @@ def _alert_once(store: Store, deps: Deps, today: date, job: str, label: str, e: 
     key = f"{job}:{label}:{today.isoformat()}"
     if store.run_done(JOB_ALERT, key):
         return
-    store.mark_run(JOB_ALERT, key, STATUS_OK)
     try:
         deps.alert(job, str(e))
-    except Exception:
-        pass  # alert failure must not stop other jobs
+    except Exception as send_err:  # alert failure must not stop other jobs
+        print(f"alert failed: {send_err}", file=sys.stderr)
+        return
+    store.mark_run(JOB_ALERT, key, STATUS_OK)
 
 
 def tick(now: datetime, settings, store: Store, deps: Deps) -> list[str]:
@@ -65,8 +67,8 @@ def tick(now: datetime, settings, store: Store, deps: Deps) -> list[str]:
 
     if now.hour >= COLLECT_HOUR and not store.run_done(JOB_COLLECT, today.isoformat()):
         run("collect", today.isoformat(), collect)
-    if weekly_due and not store.run_done("publish", weekly):
+    if weekly_due and not store.run_done(JOB_PUBLISH, weekly):
         run("weekly", weekly, lambda: report("weekly"))
-    if monthly_due and not store.run_done("publish", monthly):
+    if monthly_due and not store.run_done(JOB_PUBLISH, monthly):
         run("monthly", monthly, lambda: report("monthly"))
     return ran

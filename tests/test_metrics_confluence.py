@@ -138,9 +138,11 @@ def test_publish_failure_marks_failed_and_retries(settings, store):
     with pytest.raises(RuntimeError):
         publish(_report(), settings, store, _client(op), SlackTarget.TEST, boom)
     assert not store.run_done("publish", _report().label)
+    pages = len(op.posts())
     sent = []
     publish(_report(), settings, store, _client(op), SlackTarget.TEST, lambda u, b: sent.append(u))
     assert len(sent) == 1
+    assert len(op.posts()) == pages  # page not recreated
 
 
 def test_alert_text_and_missing_webhook(settings):

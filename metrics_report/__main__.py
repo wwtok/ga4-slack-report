@@ -3,14 +3,13 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from datetime import date, datetime
 from functools import partial
 from pathlib import Path
 
 from metrics_report import build
 from metrics_report.amplitude import AmplitudeClient
-from metrics_report.config import SlackTarget, load_settings
+from metrics_report.config import SlackTarget, load_settings, webhook
 from metrics_report.confluence import ConfluenceClient, alert, publish
 from metrics_report.store import Store
 from metrics_report.tick import KST, Deps, tick
@@ -53,6 +52,8 @@ def main(argv: list[str] | None = None) -> None:
     amp = AmplitudeClient(settings.secrets.amplitude_api_key, settings.secrets.amplitude_secret_key)
     target = SlackTarget.TEST if args.test else SlackTarget.PROD
     sec = settings.secrets
+    if args.cmd == "tick" or not args.dry_run:
+        webhook(settings, target)  # fail fast on missing webhook
     conf = ConfluenceClient(settings.confluence_base_url, sec.confluence_email, sec.confluence_api_token)
 
     if args.cmd == "tick":

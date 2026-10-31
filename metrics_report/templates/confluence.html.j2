@@ -17,6 +17,15 @@
 {% endfor %}
 </tbody></table>
 {% endfor %}
+{% if daily_dau %}
+<h2>일별 DAU</h2>
+<table><tbody>
+<tr><th>날짜</th><th>DAU</th></tr>
+{% for day, n in daily_dau %}
+<tr><td>{{ day }}</td><td>{{ n }}</td></tr>
+{% endfor %}
+</tbody></table>
+{% endif %}
 <h2>네이버 검색</h2>
 {% if naver %}
 <table><tbody>
@@ -53,7 +62,7 @@
 <table><tbody>
 <tr><th>페이지</th><th>클릭</th><th>노출</th><th>CTR</th><th>네이버 랜딩 재방문율</th></tr>
 {% for u in naver.urls %}
-<tr><td>{{ u.item }}</td><td>{{ u.clicks }}</td><td>{{ u.imp }}</td><td>{{ u.ctr }}</td><td>{{ u.revisit }}</td></tr>
+<tr><td><a href="{{ u.href }}">{{ u.item }}</a></td><td>{{ u.clicks }}</td><td>{{ u.imp }}</td><td>{{ u.ctr }}</td><td>{{ u.revisit }}</td></tr>
 {% endfor %}
 </tbody></table>
 {% else %}

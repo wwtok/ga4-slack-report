@@ -121,3 +121,19 @@ def test_monthly_slack_omits_new_weekly_keeps():
     r.kind = "monthly"
     assert "신규" not in slack_text(r)
     assert "신규 520" in slack_text(report(naver()))
+
+
+def test_confluence_daily_dau_table_replaces_avg_row():
+    r = report(naver(), dau_avg=Delta(150, 100, 50.0))
+    r.daily_dau = [(date(2026, 10, 24), 111), (date(2026, 10, 25), 222)]
+    html = render_confluence(r, None)
+    assert "일별 DAU" in html
+    assert "<td>10-24 (토)</td><td>111</td>" in html
+    assert "<td>10-25 (일)</td><td>222</td>" in html
+    assert "DAU (일평균)" not in html
+
+
+def test_confluence_url_top_is_link():
+    html = render_confluence(report(naver()), None)
+    assert '<a href="https://x.com/a%20b/?q=1">' in html
+    assert ">/a b" in html

@@ -10,13 +10,12 @@ from ga4_report.slack import send_webhook
 from metrics_report.config import Settings, SlackTarget, webhook
 from metrics_report.metrics import Report
 from metrics_report.render import render_confluence, render_glossary, render_slack
-from metrics_report.store import Store
+from metrics_report.store import STATUS_OK, Store
 
 ROOT_TITLE = "📊 지표 리포트"
 WEEKLY_TITLE = "주간"
 MONTHLY_TITLE = "월간"
 JOB_PUBLISH = "publish"
-STATUS_OK = "ok"
 STATUS_FAILED = "failed"
 
 

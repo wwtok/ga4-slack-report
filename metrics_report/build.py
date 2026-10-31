@@ -173,6 +173,7 @@ def build_report(
     naver_fetch=fetch_ranks,
     naver_totals_fetch=fetch_daily_totals,
 ) -> Report:
+    amp = _Memo(amp)  # shared with _amplitude so daily uniques are fetched once
     monthly = kind == "monthly"
     p = monthly_period(run_date) if monthly else weekly_period(run_date)
     report = Report(
@@ -183,6 +184,8 @@ def build_report(
         naver=None,
         unsupported=[NO_SIGNUPS],
     )
+    days = (p.start + timedelta(days=i) for i in range((p.end - p.start).days + 1))
+    report.daily_dau = list(zip(days, amp.active_users(p)[1]))
     try:
         report.naver = _naver_section(
             kind, p, run_date, settings, store, amp, naver_fetch, naver_totals_fetch

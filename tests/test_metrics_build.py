@@ -147,3 +147,14 @@ def test_previous_snapshot_is_latest_earlier(settings, store):
     store.save_ranks(date(2026, 10, 3), 30, [RankRow("url", "https://x.kr/old", 1, 1, 1.0, None)])
     r = build(settings, store, kind="monthly")
     assert [u.item for u in r.naver.prev_urls] == ["https://x.kr/old"]
+
+
+def test_daily_dau_zips_series_with_period_dates(settings, store):
+    class SevenAmp(FakeAmp):
+        def active_users(self, p):
+            return 200, list(range(10, 10 + (p.end - p.start).days + 1))
+
+    r = build_report("weekly", RUN, settings, store, SevenAmp(), fake_ranks, fake_totals)
+    assert r.daily_dau[0] == (date(2026, 10, 24), 10)
+    assert r.daily_dau[-1] == (date(2026, 10, 30), 16)
+    assert len(r.daily_dau) == 7

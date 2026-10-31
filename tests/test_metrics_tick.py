@@ -85,3 +85,47 @@ def test_tick_alert_once_per_day(store):
     assert len(f.alerts) == 1
     run(f, store, at(2026, 11, 2, 13))
     assert len(f.alerts) == 2
+
+
+def test_tick_friday_night_skips_in_progress_week(store):
+    f = Fake(store)
+    ran = run(f, store, at(2026, 10, 30, 23))
+    assert "weekly" in ran  # previous week's label, still unpublished
+    f.published.clear()
+    assert "weekly" not in run(f, store, at(2026, 10, 30, 23, 30))
+    assert not store.run_done("publish", "[주간] 2026-10-24 ~ 10-30")
+
+
+def test_tick_oct_31_night_no_october_monthly(store):
+    f = Fake(store)
+    run(f, store, at(2026, 10, 31, 23))
+    assert not store.run_done("publish", "[월간] 2026-10")
+
+
+def test_tick_publish_exception_alerts_and_continues(store):
+    f = Fake(store)
+    orig = f.publish
+
+    def boom(r):
+        if r.kind == "weekly":
+            raise RuntimeError("confluence down")
+        return orig(r)
+
+    f.publish = boom
+    ran = run(f, store, at(2026, 11, 1, 13))
+    assert ("weekly", "confluence down") in f.alerts
+    assert "monthly" in ran and "collect" in ran
+
+
+def test_tick_alert_send_failure_retries_next_tick(store, capsys):
+    f = Fake(store, fail_collect=True)
+
+    def bad(s, r):
+        raise RuntimeError("slack down")
+
+    d = f.deps()
+    d.alert = bad
+    tick(at(2026, 10, 31, 13), None, store, d)
+    assert "alert failed" in capsys.readouterr().err
+    run(f, store, at(2026, 10, 31, 14))
+    assert len(f.alerts) == 1
