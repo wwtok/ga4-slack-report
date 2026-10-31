@@ -96,8 +96,8 @@ def _slack_lines(r: Report, page_url: str) -> tuple[str, list[str]]:
         share = a.get("naver_share")
         search = [
             f"네이버 유입 {fmt_rate(share.current)}" if share else None,
-            f"검색 노출 {fmt_count(n.impressions.current)}",
-            f"CTR {fmt_rate(n.ctr.current)} ({chg_rate(n.ctr)})",
+            f"검색 노출 {fmt_count(n.impressions.current)}" if n.impressions else None,
+            f"CTR {fmt_rate(n.ctr.current)} ({chg_rate(n.ctr)})" if n.ctr else None,
         ]
         lines.append("🔍 " + " · ".join(p for p in search if p))
 
@@ -152,9 +152,13 @@ def _naver_ctx(r: Report) -> dict | None:
     return {
         "window": f"{w.start:%m-%d} ~ {w.end:%m-%d}",
         "totals": [
-            ("노출", fmt_count(n.impressions.current), chg_count(n.impressions)),
-            ("클릭", fmt_count(n.clicks.current), chg_count(n.clicks)),
-            ("CTR", fmt_rate(n.ctr.current), chg_rate(n.ctr)),
+            (label, fmt(d.current), chg(d))
+            for label, d, fmt, chg in (
+                ("노출", n.impressions, fmt_count, chg_count),
+                ("클릭", n.clicks, fmt_count, chg_count),
+                ("CTR", n.ctr, fmt_rate, chg_rate),
+            )
+            if d is not None
         ],
         "keywords": [row(x) for x in n.top_keywords],
         "rising": n.rising,

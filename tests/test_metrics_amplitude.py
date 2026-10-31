@@ -7,8 +7,8 @@ from urllib.parse import parse_qs, urlparse
 from metrics_report.amplitude import (
     AmplitudeClient,
     parse_grouped,
+    parse_bracket,
     parse_retention,
-    parse_series,
 )
 from metrics_report.periods import Period
 
@@ -46,10 +46,6 @@ def _q(req):
     return {k: v[0] for k, v in parse_qs(urlparse(req.full_url).query).items()}
 
 
-def test_parse_series():
-    assert parse_series(_load("amplitude_users.json")) == [10, 20, 30]
-
-
 def test_parse_retention():
     p = _load("amplitude_retention.json")
     assert parse_retention(p, 1) == 0.25
@@ -79,32 +75,64 @@ def test_client_sends_basic_auth_and_localhost_filter():
     assert "localhost" in q["e"] and "is not" in q["e"]
 
 
-def test_active_users_params():
-    op = FakeOpener(_load("amplitude_users.json"))
-    assert AmplitudeClient("k", "s", opener=op).active_users(P, 7) == [10, 20, 30]
+def _uniques_payload(total, daily):
+    return {"data": {"seriesCollapsed": [[{"setId": "", "value": total}]], "series": [daily]}}
+
+
+def test_active_users_uses_uniques():
+    op = FakeOpener(_uniques_payload(729, [54, 61]))
+    assert AmplitudeClient("k", "s", opener=op).active_users(P) == (729, [54, 61])
     q = _q(op.reqs[0])
-    assert q["m"] == "active" and q["i"] == "7"
+    assert q["m"] == "uniques" and q["i"] == "1"
+    assert '"_active"' in q["e"] and "localhost" in q["e"]
+
+
+def test_new_users_uses_uniques():
+    op = FakeOpener(_uniques_payload(725, [1]))
+    assert AmplitudeClient("k", "s", opener=op).new_users(P) == 725
+    assert '"_new"' in _q(op.reqs[0])["e"]
 
 
 def test_next_period_retention_naver_segment():
-    op = FakeOpener(_load("amplitude_retention.json"))
+    bracket = {"data": {"series": [{"combined": [
+        {"count": 40, "outof": 40, "incomplete": False},
+        {"count": 10, "outof": 40, "incomplete": False},
+    ]}]}}
+    op = FakeOpener(bracket)
     c = AmplitudeClient("k", "s", opener=op)
     assert c.next_period_retention(P, 7, source="naver") == 0.25
     q = _q(op.reqs[0])
+    assert q["rm"] == "bracket" and q["rb"] == "[[1, 7]]"
     seg = json.loads(q["s"])
     assert seg[0]["prop"] == "gp:initial_referring_domain"
     assert seg[0]["op"] == "is"
     assert "search.naver.com" in seg[0]["values"]
-    assert q["i"] == "7"
+    assert q["i"] == "1"
 
 
 def test_day_n_retention_and_landing():
     op = FakeOpener(_load("amplitude_retention.json"))
     c = AmplitudeClient("k", "s", opener=op)
     assert c.day_n_retention(P, (1,)) == {1: 0.25}
+    op.payload = {"data": {"series": [{"combined": [
+        {"count": 4, "outof": 4, "incomplete": False},
+        {"count": 1, "outof": 4, "incomplete": False},
+    ]}]}}
     assert c.landing_retention_by_path(P, ["/a"]) == {"/a": 0.25}
     q = _q(op.reqs[-1])
-    assert q["i"] == "7" and "/a" in q["se"] and "naver" in q["se"]
+    assert q["rm"] == "bracket" and q["rb"] == "[[1, 7]]" and q["i"] == "1"
+    q = _q(op.reqs[-1])
+    assert "/a" in q["se"] and "naver" in q["se"]
+
+
+def test_parse_bracket():
+    cell = {"count": 3, "outof": 488, "incomplete": False}
+    p = {"data": {"series": [{"combined": [{**cell, "count": 488}, cell]}]}}
+    assert parse_bracket(p) == 3 / 488
+    cell["incomplete"] = True
+    assert parse_bracket(p) is None
+    cell.update(incomplete=False, outof=0)
+    assert parse_bracket(p) is None
 
 
 def test_parse_retention_incomplete_is_none():

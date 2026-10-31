@@ -24,10 +24,6 @@ INITIAL_REFERRER_PROP = "gp:initial_referring_domain"
 GROUP_LIMIT = 100
 
 
-def parse_series(payload: dict) -> list[int]:
-    return payload["data"]["series"][0]
-
-
 def parse_retention(payload: dict, n: int) -> float | None:
     """Ratio at period n after cohort (combined[0]=cohort, [1]=same period).
 
@@ -37,6 +33,17 @@ def parse_retention(payload: dict, n: int) -> float | None:
     if n + 1 >= len(combined):
         return None
     cell = combined[n + 1]
+    if cell.get("incomplete") or not cell["outof"]:
+        return None
+    return cell["count"] / cell["outof"]
+
+
+def parse_bracket(payload: dict) -> float | None:
+    """Bracket-mode retention: combined[0]=cohort, [1]=returned within bracket."""
+    combined = payload["data"]["series"][0]["combined"]
+    if len(combined) < 2:
+        return None
+    cell = combined[1]
     if cell.get("incomplete") or not cell["outof"]:
         return None
     return cell["count"] / cell["outof"]
@@ -76,21 +83,20 @@ class AmplitudeClient:
     def _range(p: Period) -> dict:
         return {"start": p.start.strftime(DATE_FMT), "end": p.end.strftime(DATE_FMT)}
 
-    def _users(self, p: Period, m: str, interval: int) -> list[int]:
-        return parse_series(self._get("users", {**self._range(p), "m": m, "i": interval}))
-
     def _seg(self, p: Period, event: dict, m: str, **extra) -> dict:
         params = {"e": json.dumps(event), "m": m, **self._range(p), **extra}
         return self._get("events/segmentation", params)
 
-    def active_users(self, p: Period, interval: Literal[1, 7, 30]) -> list[int]:
-        """Values per interval. ponytail: /users takes only user-property segments,
-        so the localhost filter (an event property) can't apply here."""
-        return self._users(p, "active", interval)
+    def _uniques(self, p: Period, event_type: str) -> dict:
+        return self._seg(p, _event(event_type), "uniques", i=1)
+
+    def active_users(self, p: Period) -> tuple[int, list[int]]:
+        """(unique users over the whole period, per-day uniques)."""
+        payload = self._uniques(p, "_active")
+        return _collapsed(payload), payload["data"]["series"][0]
 
     def new_users(self, p: Period) -> int:
-        """Not localhost-filtered (see active_users)."""
-        return sum(self._users(p, "new", 1))
+        return _collapsed(self._uniques(p, "_new"))
 
     def pageviews(self, p: Period) -> tuple[int, int]:
         ev = _event(PAGE_VIEWED)
@@ -112,7 +118,8 @@ class AmplitudeClient:
         return _collapsed(self._seg(p, _event(event_type), "totals"))
 
     def _retention(
-        self, p: Period, interval: int, n: int, se: dict, segment: dict | None = None
+        self, p: Period, interval: int, n: int, se: dict, segment: dict | None = None,
+        bracket_days: int | None = None,
     ) -> float | None:
         params = {
             "se": json.dumps(se),
@@ -122,6 +129,11 @@ class AmplitudeClient:
         }
         if segment:
             params["s"] = json.dumps([segment])
+        if bracket_days:
+            # Amplitude weekly buckets are Monday-aligned, so use daily cohorts and
+            # ask "returned within 1..N days" instead.
+            params.update({"i": 1, "rm": "bracket", "rb": json.dumps([[1, bracket_days]])})
+            return parse_bracket(self._get("retention", params))
         return parse_retention(self._get("retention", params), n)
 
     def next_period_retention(
@@ -134,7 +146,9 @@ class AmplitudeClient:
         if source:
             op = "is" if source == "naver" else "is not"
             segment = {"prop": INITIAL_REFERRER_PROP, "op": op, "values": NAVER_DOMAINS}
-        return self._retention(cohort, interval, 1, _event("_new"), segment)
+        return self._retention(
+            cohort, interval, 1, _event("_new"), segment, bracket_days=interval
+        )
 
     def day_n_retention(
         self, cohort: Period, days: tuple[int, ...] = (1, 7)
@@ -174,5 +188,5 @@ class AmplitudeClient:
                     },
                 ],
             }
-            out[path] = self._retention(cohort, 7, 1, se)
+            out[path] = self._retention(cohort, 7, 1, se, bracket_days=7)
         return out

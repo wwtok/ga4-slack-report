@@ -62,9 +62,9 @@ def top_by_clicks(rows: list[RankRow], kind: str, n: int = 10) -> list[RankRow]:
 @dataclass
 class NaverSection:
     window: Period
-    impressions: Delta
-    clicks: Delta
-    ctr: Delta
+    impressions: Delta | None
+    clicks: Delta | None
+    ctr: Delta | None
     top_keywords: list[RankRow]
     top_urls: list[tuple[RankRow, float | None]]
     rising: list[tuple[str, int]]
