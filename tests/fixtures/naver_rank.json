@@ -1,0 +1,11 @@
+{"code": 0, "message": "SUCCESS", "meta": {"latestDate": "20260102"}, "items": [{
+  "period": {"period": 7, "clickCount": 30, "exposeCount": 400, "ctr": 7.5},
+  "querys": [
+    {"key": "테스트키워드A", "clickCount": 20, "exposeCount": 100, "ctr": 20.0, "exposedRank": 1.4},
+    {"key": "테스트키워드B", "clickCount": 0, "exposeCount": 50, "ctr": 0, "exposedRank": null}
+  ],
+  "urls": [
+    {"key": "https://www.example.test/a", "clickCount": 5, "exposeCount": 200, "ctr": 2.5, "exposedRank": 2.9}
+  ],
+  "logs": []
+}]}
