@@ -158,7 +158,7 @@ def _naver_section(
         ctr=totals[2],
         top_keywords=top_by_clicks(rows, "keyword", TOP_N),
         top_urls=[(u, landing.get(normalize_path(u.item))) for u in top],
-        rising=rising_keywords(kw, prev_kw),
+        rising=rising_keywords(kw, prev_kw) if prev else [],  # no baseline -> hide
         seo=seo_opportunities(kw),
         prev_urls=[r for r in prev if r.kind == "url"],
     )

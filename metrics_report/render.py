@@ -81,7 +81,7 @@ def _slack_lines(r: Report, page_url: str) -> tuple[str, list[str]]:
     a = r.amplitude
     users = [
         _part("MAU" if monthly else "WAU", "mau" if monthly else "wau", a.get("mau" if monthly else "wau")),
-        _part("신규", "new_users", a.get("new_users"), with_change=False),
+        None if monthly else _part("신규", "new_users", a.get("new_users"), with_change=False),
         _part("재방문율", "revisit_rate", a.get("revisit_rate")),
     ]
     lines = []

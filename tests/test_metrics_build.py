@@ -85,8 +85,16 @@ def test_naver_failure_keeps_report(settings, store):
 
 def test_first_week_no_previous_snapshot(settings, store):
     r = build(settings, store)
-    assert r.naver.rising == [("kw", 10)]
+    assert r.naver.rising == []
+    assert not any("급상승" in i for i in r.insights)
     assert r.naver.prev_urls == []
+
+
+def test_rising_computed_with_previous_snapshot(settings, store):
+    store.save_ranks(date(2026, 10, 25), 7, [RankRow("keyword", "kw", 4, 1, 1.0, None)])
+    r = build(settings, store)
+    assert r.naver.rising == [("kw", 6)]
+    assert any("급상승" in i for i in r.insights)
 
 
 def test_dry_run_writes_two_files(settings, store):

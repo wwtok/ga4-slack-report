@@ -107,3 +107,17 @@ def test_glossary_has_terms():
 
 def test_landing_name_matches():
     assert "네이버 랜딩 재방문율" in render_confluence(report(naver()), None)
+
+
+def test_confluence_rising_placeholder_when_empty():
+    n = naver()
+    n.rising = []
+    assert "비교 기준 없음" in render_confluence(report(n), None)
+    assert "비교 기준 없음" not in render_confluence(report(naver()), None)
+
+
+def test_monthly_slack_omits_new_weekly_keeps():
+    r = report(naver(), mau=Delta(900, 800, 12.5))
+    r.kind = "monthly"
+    assert "신규" not in slack_text(r)
+    assert "신규 520" in slack_text(report(naver()))

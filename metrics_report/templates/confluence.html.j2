@@ -33,11 +33,15 @@
 {% endfor %}
 </tbody></table>
 <h3>급상승 키워드 ({{ naver.window }})</h3>
+{% if naver.rising %}
 <ul>
 {% for kw, n in naver.rising %}
 <li>{{ kw }} (+{{ n }} 클릭)</li>
 {% endfor %}
 </ul>
+{% else %}
+<p>비교 기준 없음 (이전 데이터가 쌓이면 다음 리포트부터 표시)</p>
+{% endif %}
 <h3>SEO 기회 키워드: 노출은 많은데 CTR 낮음 ({{ naver.window }})</h3>
 <table><tbody>
 <tr><th>키워드</th><th>클릭</th><th>노출</th><th>CTR</th></tr>
