@@ -3,9 +3,9 @@ naver_site: "https://www.noo9.kr"
 naver_site_hash: "8e352bf0c86e587880e7dcd0f80a414fc844acb31b50755f77ae25ac4daa26a8"
 aside_account: "u7"
 confluence_base_url: "https://noo9vote.atlassian.net/wiki"
-# claychanwoo 개인 스페이스(개발용). 운영 전환 시 SD로 교체
-confluence_space_key: "~7120206b92eef971fc48959e0f8d99c17c6bc9"
-confluence_parent_page_id: null
+# 운영 게시: 누구뽑지 스페이스, 홈 페이지 아래
+confluence_space_key: "SD"
+confluence_parent_page_id: "33280"
 # --test 게시 전용 (운영 스페이스와 분리)
 confluence_test_space_key: "~7120206b92eef971fc48959e0f8d99c17c6bc9"
 confluence_test_parent_page_id: null
