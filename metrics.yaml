@@ -11,3 +11,10 @@ out_dir: "out"
 okr_links:
   "KR 3.1": "https://noo9vote.atlassian.net/wiki/spaces/SD/pages/79921173"
   "KR 3.1.1": "https://noo9vote.atlassian.net/wiki/spaces/SD/pages/79855634"
+
+# 데이터 출처란 Amplitude 링크 (Confluence 리포트 하단)
+amplitude_links:
+  메인 대시보드: "https://app.amplitude.com/analytics/delicate-lab-505752/dashboard/os3o8ubq"
+  일별 활성 사용자: "https://app.amplitude.com/analytics/delicate-lab-505752/chart/ndmq82pl"
+  일별 신규 사용자: "https://app.amplitude.com/analytics/delicate-lab-505752/chart/l2t9qcey"
+  리텐션: "https://app.amplitude.com/analytics/delicate-lab-505752/chart/cquvwt5i"
