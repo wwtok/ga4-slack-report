@@ -220,6 +220,33 @@ schedule:
 
 Actions 탭 > "GA4 Report -> Slack" > **Run workflow**
 
+## 지표 리포트 (Amplitude + 네이버 서치어드바이저)
+
+`metrics_report/` 패키지. Amplitude 지표와 네이버 서치어드바이저 유입 데이터를 모아 주간(토 09시)·월간(1일 09시) 리포트를 Confluence에 게시하고 Slack에 알린다. 매일 12시 이후 일별 수집도 한다. GA4 GitHub Actions 스케줄은 중단했다(수동 `workflow_dispatch`만 유지).
+
+- `.env`: `AMPLITUDE_API_KEY`, `AMPLITUDE_SECRET_KEY`, `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN`, `SLACK_WEBHOOK_URL`, `SLACK_TEST_WEBHOOK_URL`
+- `metrics.yaml`: `amplitude_project_id`, `naver_site`, `naver_site_hash`, `aside_account`, `confluence_base_url`, `confluence_space_key`, `confluence_parent_page_id`, `data_dir`, `out_dir`, `okr_links`
+- 네이버 수집은 Aside "누구뽑지" 프로필(`u7`, 네이버 `noo` 로그인)이 필요하다. `aside` CLI가 PATH에 있어야 한다.
+- 서치어드바이저는 비공식 API라 예고 없이 깨질 수 있다.
+
+```bash
+python -m metrics_report report weekly|monthly [--date YYYY-MM-DD] [--dry-run] [--test]
+python -m metrics_report collect    # 일별 수집
+python -m metrics_report backfill   # 과거 데이터 채우기
+python -m metrics_report tick [--test]  # 시간당 스케줄러(도래한 작업만 1회 실행)
+```
+
+`--test`는 테스트 Slack 웹훅과 별도 DB(`data/metrics-test.db`)를 쓴다. 테스트 DB는 비어 있어 두 번째 테스트 실행 전까지 전주 비교가 없다.
+
+launchd(매시간):
+
+```bash
+./scripts/install_launchd.sh              # 설치
+./scripts/install_launchd.sh --uninstall  # 제거
+```
+
+로그: `~/Library/Logs/noo9-metrics-report.log`
+
 ## 프로젝트 구조
 
 ```

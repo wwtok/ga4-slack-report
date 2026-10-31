@@ -16,6 +16,7 @@ from metrics_report.tick import KST, Deps, tick
 
 SYSTEM_CA = "/etc/ssl/cert.pem"
 DB_NAME = "metrics.db"
+TEST_DB_NAME = "metrics-test.db"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -32,6 +33,11 @@ def _parser() -> argparse.ArgumentParser:
     return ap
 
 
+def db_path(settings, test: bool) -> Path:
+    # test publishes must not mark production runs done
+    return settings.data_dir / (TEST_DB_NAME if test else DB_NAME)
+
+
 def main(argv: list[str] | None = None) -> None:
     # venv Python lacks system CAs on this Mac
     if "SSL_CERT_FILE" not in os.environ and Path(SYSTEM_CA).exists():
@@ -39,7 +45,7 @@ def main(argv: list[str] | None = None) -> None:
 
     args = _parser().parse_args(argv)
     settings = load_settings()
-    store = Store(settings.data_dir / DB_NAME)
+    store = Store(db_path(settings, getattr(args, "test", False)))
     today = date.today()
 
     if args.cmd == "collect":
