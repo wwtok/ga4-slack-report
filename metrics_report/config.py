@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Dict, Mapping, Optional
 
@@ -13,6 +14,12 @@ ENV_AMPLITUDE_SECRET_KEY = "AMPLITUDE_SECRET_KEY"
 ENV_CONFLUENCE_EMAIL = "CONFLUENCE_EMAIL"
 ENV_CONFLUENCE_API_TOKEN = "CONFLUENCE_API_TOKEN"
 ENV_SLACK_WEBHOOK_URL = "SLACK_WEBHOOK_URL"
+ENV_SLACK_TEST_WEBHOOK_URL = "SLACK_TEST_WEBHOOK_URL"
+
+
+class SlackTarget(Enum):
+    PROD = ENV_SLACK_WEBHOOK_URL
+    TEST = ENV_SLACK_TEST_WEBHOOK_URL
 
 
 @dataclass
@@ -21,7 +28,8 @@ class Secrets:
     amplitude_secret_key: str
     confluence_email: str
     confluence_api_token: str
-    slack_webhook_url: str
+    slack_webhook_url: str = ""
+    slack_test_webhook_url: str = ""
 
 
 @dataclass
@@ -52,7 +60,8 @@ def _secrets(env: Mapping[str, str]) -> Secrets:
         amplitude_secret_key=_require(env, ENV_AMPLITUDE_SECRET_KEY),
         confluence_email=_require(env, ENV_CONFLUENCE_EMAIL),
         confluence_api_token=_require(env, ENV_CONFLUENCE_API_TOKEN),
-        slack_webhook_url=_require(env, ENV_SLACK_WEBHOOK_URL),
+        slack_webhook_url=env.get(ENV_SLACK_WEBHOOK_URL, ""),
+        slack_test_webhook_url=env.get(ENV_SLACK_TEST_WEBHOOK_URL, ""),
     )
 
 
@@ -74,3 +83,13 @@ def load_settings(path: str = "metrics.yaml", env: Mapping[str, str] = os.enviro
         okr_links=dict(raw.get("okr_links") or {}),
         secrets=_secrets(env),
     )
+
+
+def webhook(settings: Settings, target: SlackTarget) -> str:
+    url = {
+        SlackTarget.PROD: settings.secrets.slack_webhook_url,
+        SlackTarget.TEST: settings.secrets.slack_test_webhook_url,
+    }[target]
+    if not url:
+        raise ValueError(f"{target.value} is not set")
+    return url
